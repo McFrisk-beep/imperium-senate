@@ -6,6 +6,28 @@ import { FACTIONS } from '../data/factions.js';
 const SWIPE_THRESHOLD = 80;
 const MAX_TILT = 15;
 
+function EffectChips({ effects }) {
+  const entries = Object.entries(effects || {}).filter(([, v]) => v !== 0);
+  if (entries.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1 justify-center mt-1">
+      {entries.map(([factionId, delta]) => {
+        const faction = FACTIONS[factionId];
+        if (!faction) return null;
+        return (
+          <span
+            key={factionId}
+            className="text-[9px] font-display font-bold leading-none"
+            style={{ color: delta > 0 ? faction.color : '#f87171', opacity: 0.75 }}
+          >
+            {faction.icon}{delta > 0 ? '+' : ''}{delta}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SwipeCard({ card, onSwipe }) {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
