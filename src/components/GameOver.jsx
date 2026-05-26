@@ -89,17 +89,29 @@ export default function GameOver() {
           <h3 className="font-display text-xs font-bold uppercase tracking-widest text-emerald-400 mb-3">
             ✓ Directives Completed
           </h3>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-4">
             {completedObjectives.map((id) => {
               const obj = OBJECTIVES.find((o) => o.id === id);
               if (!obj) return null;
               return (
-                <div key={id} className="flex items-start gap-2">
-                  <span className="text-emerald-400 text-sm">✓</span>
-                  <div>
-                    <p className="text-emerald-300/80 text-xs">{obj.hint}</p>
-                    <p className="text-emerald-400/50 text-[10px] mt-0.5">{obj.reward}</p>
+                <div key={id} className="flex flex-col gap-1.5">
+                  <div className="flex items-start gap-2">
+                    <span className="text-emerald-400 text-sm">✓</span>
+                    <div>
+                      <p className="text-emerald-300/80 text-xs">{obj.hint}</p>
+                      <p className="text-emerald-400/50 text-[10px] mt-0.5">{obj.reward}</p>
+                    </div>
                   </div>
+                  {obj.loreFragment && (
+                    <p className="text-slate-400/70 text-[11px] leading-relaxed pl-4 border-l border-emerald-500/20 italic">
+                      {obj.loreFragment}
+                    </p>
+                  )}
+                  {obj.runBonusLabel && (
+                    <p className="text-amber-400/70 text-[10px] pl-4 font-display tracking-wide">
+                      ▸ {obj.runBonusLabel}
+                    </p>
+                  )}
                 </div>
               );
             })}

@@ -415,6 +415,77 @@ export const CARDS = [
     objectiveGlyph: false,
   },
 
+  // ── LEGACY-GATED CARDS ───────────────────────────────────────────────────
+  // Unlocked only after specific cross-run legacy flags are set (GDD §6.3)
+  {
+    id: 'pale_second_contact',
+    character: 'The Emissary',
+    race: 'pale',
+    title: 'Pale Emissary — Second Threshold',
+    scenario:
+      'You have stood before us before. The first threshold has passed. Now we ask: was your choice made freely, or were you already becoming what you feared?',
+    left: {
+      label: 'It was freely made',
+      preview: 'Claim your autonomy',
+      effects: { coalition: 5, senate: -3 },
+    },
+    right: {
+      label: 'I am not sure',
+      preview: 'Admit uncertainty',
+      effects: { coalition: 8, senate: -5 },
+      flags: ['pale_met'],
+    },
+    category: 'objective',
+    requiredFlags: [],
+    requiredLegacyFlags: ['first_pale_encounter'],
+    objectiveGlyph: true,
+  },
+  {
+    id: 'crisis_kra_van_war',
+    character: 'War Council',
+    race: 'kravan',
+    title: "CRISIS — Kra'van Conflict",
+    scenario:
+      "The war from the last Senate's era still bleeds. Kra'van remnant fleets are running blockades on the outer trade routes. The Military wants a show of force. The Coalition says the galaxy cannot afford another war.",
+    left: {
+      label: 'Negotiate passage rights',
+      preview: 'Find a political solution',
+      effects: { military: -7, coalition: 6, trade: 4 },
+    },
+    right: {
+      label: 'Authorize fleet response',
+      preview: 'End the blockade by force',
+      effects: { military: 10, coalition: -9, trade: -4 },
+      flags: ['war_hawk'],
+    },
+    category: 'crisis',
+    requiredFlags: [],
+    requiredLegacyFlags: ['kra_van_war_started'],
+    objectiveGlyph: false,
+  },
+  {
+    id: 'senate_ruins',
+    character: 'Archivist Pell',
+    race: 'human',
+    title: 'Senate Archivist',
+    scenario:
+      "The records of the dissolved Senate are still classified. Some believe the old guard is rebuilding in secret. Others say the dissolution was the galaxy's only honest moment. You hold the seal.",
+    left: {
+      label: 'Keep the records sealed',
+      preview: 'Let the past stay buried',
+      effects: { senate: 6, coalition: -4 },
+    },
+    right: {
+      label: 'Declassify the records',
+      preview: 'Let the galaxy know',
+      effects: { senate: -7, coalition: 7, trade: -3 },
+    },
+    category: 'standard',
+    requiredFlags: [],
+    requiredLegacyFlags: ['senate_dissolved'],
+    objectiveGlyph: false,
+  },
+
   // ── OBJECTIVE / STANDARD ─────────────────────────────────────────────────
   {
     id: 'alien_ally_objective',

@@ -170,6 +170,7 @@ export default function SwipeCard({ card, onSwipe }) {
             ← {card.left.label}
           </p>
           <p className="text-red-300/70 text-[10px] mt-0.5">{card.left.preview}</p>
+          <EffectChips effects={card.left.effects} />
         </div>
       </div>
 
@@ -183,6 +184,7 @@ export default function SwipeCard({ card, onSwipe }) {
             {card.right.label} →
           </p>
           <p className="text-emerald-300/70 text-[10px] mt-0.5">{card.right.preview}</p>
+          <EffectChips effects={card.right.effects} />
         </div>
       </div>
 
@@ -240,7 +242,7 @@ export default function SwipeCard({ card, onSwipe }) {
             borderBottom: `1px solid ${factionColor}30`,
           }}
         >
-          <Portrait race={card.race} size={140} />
+          <Portrait race={card.race} size={140} objectiveGlyph={card.objectiveGlyph} />
         </div>
 
         {/* Character info */}

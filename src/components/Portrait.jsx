@@ -4,7 +4,7 @@ import { FACTIONS } from '../data/factions.js';
 // Hexagonal clip-path ID must be unique per instance
 let _idCounter = 0;
 
-function HexPortrait({ race, size = 200 }) {
+function HexPortrait({ race, size = 200, objectiveGlyph = false }) {
   const raceData = RACES[race] || RACES.human;
   const { primary, secondary, accent } = raceData.palette;
   const factionColor = raceData.primaryFaction
@@ -12,10 +12,13 @@ function HexPortrait({ race, size = 200 }) {
     : '#4a5568';
 
   const clipId = `hex-clip-${race}`;
-  const filterId = `hex-filter-${race}`;
 
-  // Hex points for a 200×250 viewBox
+  // Hex points for a 200×200 viewBox
   const hexPoints = '100,4 196,52 196,148 100,196 4,148 4,52';
+  // Corner points for objective glyph diamonds
+  const corners = [
+    [100, 4], [196, 52], [196, 148], [100, 196], [4, 148], [4, 52],
+  ];
 
   return (
     <svg
@@ -29,10 +32,6 @@ function HexPortrait({ race, size = 200 }) {
         <clipPath id={clipId}>
           <polygon points={hexPoints} />
         </clipPath>
-        <filter id={filterId} x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
       </defs>
 
       {/* Hex border ring */}
@@ -43,6 +42,29 @@ function HexPortrait({ race, size = 200 }) {
         strokeWidth="3"
         opacity="0.85"
       />
+
+      {/* Objective glyph — faint dashed outer ring + corner diamonds */}
+      {objectiveGlyph && (
+        <>
+          <polygon
+            points={hexPoints}
+            fill="none"
+            stroke="#d4af37"
+            strokeWidth="1.5"
+            strokeDasharray="4 3"
+            opacity="0.45"
+            transform="scale(1.06) translate(-5.5, -6)"
+          />
+          {corners.map(([cx, cy], i) => (
+            <polygon
+              key={i}
+              points={`${cx},${cy - 4} ${cx + 4},${cy} ${cx},${cy + 4} ${cx - 4},${cy}`}
+              fill="#d4af37"
+              opacity="0.6"
+            />
+          ))}
+        </>
+      )}
 
       {/* Clipped portrait area */}
       <g clipPath={`url(#${clipId})`}>
