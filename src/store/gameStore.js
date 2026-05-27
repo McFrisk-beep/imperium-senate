@@ -62,6 +62,8 @@ function makeInitialState() {
     currentCard: null,
     deck: [],
     deathCause: null,
+    winData: null,
+    activeBonuses: [],
     senatorName: '',
     senatorLog: loadLS('gs_senatorLog', []),
     legacyFlags: loadLS('gs_legacyFlags', []),
@@ -138,8 +140,13 @@ export const useGameStore = create((set, get) => ({
       }
     }
 
+    // Collect active bonuses for the brief screen
+    const activeBonuses = OBJECTIVES.filter(
+      (o) => legacyFlags.includes(o.id) && o.runBonus
+    );
+
     set({
-      phase: 'game',
+      phase: activeBonuses.length > 0 ? 'brief' : 'game',
       meters,
       flags: newFlags,
       turn: 0,
@@ -148,9 +155,15 @@ export const useGameStore = create((set, get) => ({
       currentCard: card,
       deck: remaining,
       deathCause: null,
+      winData: null,
+      activeBonuses,
       senatorName: randomName(),
       legacyFlags: updatedLegacyFlags,
     });
+  },
+
+  beginRun: () => {
+    set({ phase: 'game' });
   },
 
   swipe: (direction) => {
@@ -248,6 +261,38 @@ export const useGameStore = create((set, get) => ({
       .map((o) => o.id);
     const finalCompleted = [...completedObjectives, ...newlyCompleted];
 
+    // Win check — all 3 assigned objectives completed
+    if (objectives.length > 0 && objectives.every((o) => finalCompleted.includes(o.id))) {
+      const entry = {
+        name: state.senatorName,
+        turns: newTurn,
+        deathCause: null,
+        outcome: 'retired',
+        date: new Date().toISOString(),
+        completedObjectives: finalCompleted,
+      };
+      const newLog = [entry, ...state.senatorLog].slice(0, 50);
+      saveLS('gs_senatorLog', newLog);
+      const newLegacyFlags = Array.from(new Set([...state.legacyFlags, ...finalCompleted]));
+      saveLS('gs_legacyFlags', newLegacyFlags);
+      set({
+        meters: newMeters,
+        flags: updatedFlags,
+        turn: newTurn,
+        completedObjectives: finalCompleted,
+        phase: 'won',
+        winData: {
+          senatorName: state.senatorName,
+          turn: newTurn,
+          completedObjectives: finalCompleted,
+          date: new Date().toISOString(),
+        },
+        senatorLog: newLog,
+        legacyFlags: newLegacyFlags,
+      });
+      return;
+    }
+
     // If deck is exhausted, reshuffle
     let newDeck = remaining;
     let finalCard = nextCard;
@@ -277,6 +322,10 @@ export const useGameStore = create((set, get) => ({
   },
 
   dismissDead: () => {
+    set({ phase: 'title' });
+  },
+
+  dismissWon: () => {
     set({ phase: 'title' });
   },
 

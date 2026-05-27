@@ -5,6 +5,8 @@ import FactionMeters from './components/FactionMeters.jsx';
 import SwipeCard from './components/SwipeCard.jsx';
 import ObjectiveHints from './components/ObjectiveHints.jsx';
 import GameOver from './components/GameOver.jsx';
+import TrueEnding from './components/TrueEnding.jsx';
+import LegacyBrief from './components/LegacyBrief.jsx';
 import SenatorLog from './components/SenatorLog.jsx';
 
 function GameUI() {
@@ -58,10 +60,20 @@ export default function App() {
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       {phase === 'title' && <TitleScreen />}
+      {phase === 'brief' && (
+        <div className="flex-1 overflow-y-auto">
+          <LegacyBrief />
+        </div>
+      )}
       {phase === 'game' && <GameUI />}
       {phase === 'dead' && (
         <div className="flex-1 overflow-y-auto">
           <GameOver />
+        </div>
+      )}
+      {phase === 'won' && (
+        <div className="flex-1 overflow-y-auto">
+          <TrueEnding />
         </div>
       )}
       {phase === 'log' && (
