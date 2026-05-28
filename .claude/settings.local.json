@@ -4,7 +4,8 @@
       "Bash(npm uninstall *)",
       "Bash(npm ls *)",
       "Bash(npm run *)",
-      "Bash(node -e \"import\\('./src/data/cards.js'\\).then\\(m => { const cats = {}; for \\(const c of m.CARDS\\) { const k = \\(c.requiredFlags?.length || c.requiredLegacyFlags?.length\\) ? \\(c.requiredLegacyFlags?.length ? 'arc/legacy' : 'chain'\\) : 'base'; cats[k] = \\(cats[k]||0\\)+1; } console.log\\('Total:', m.CARDS.length\\); console.log\\(cats\\); }\\)\")"
+      "Bash(node -e \"import\\('./src/data/cards.js'\\).then\\(m => { const cats = {}; for \\(const c of m.CARDS\\) { const k = \\(c.requiredFlags?.length || c.requiredLegacyFlags?.length\\) ? \\(c.requiredLegacyFlags?.length ? 'arc/legacy' : 'chain'\\) : 'base'; cats[k] = \\(cats[k]||0\\)+1; } console.log\\('Total:', m.CARDS.length\\); console.log\\(cats\\); }\\)\")",
+      "Bash(node -e ' *)"
     ]
   }
 }
