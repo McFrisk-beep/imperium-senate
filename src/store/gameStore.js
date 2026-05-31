@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { CARDS } from '../data/cards.js';
 import { FACTIONS } from '../data/factions.js';
 import { assignObjectives, OBJECTIVES } from '../data/objectives.js';
+import { pickBill } from '../data/bills.js';
+
+// Turns of petitioning between mandatory Senate votes.
+export const VOTE_INTERVAL = 6;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +65,9 @@ function makeInitialState() {
     completedObjectives: [],
     currentCard: null,
     deck: [],
+    activeRoom: 'office',   // office | audience | vote
+    pendingVote: null,      // the bill when a vote is due; locks the Audience Chamber
+    turnsSinceVote: 0,      // drives the mandatory vote cadence
     deathCause: null,
     winData: null,
     activeBonuses: [],
@@ -154,6 +161,9 @@ export const useGameStore = create((set, get) => ({
       completedObjectives: [],
       currentCard: card,
       deck: remaining,
+      activeRoom: 'office',
+      pendingVote: null,
+      turnsSinceVote: 0,
       deathCause: null,
       winData: null,
       activeBonuses,
@@ -310,6 +320,12 @@ export const useGameStore = create((set, get) => ({
       saveLS('gs_legacyFlags', updatedLegacyFlags);
     }
 
+    // Advance the vote cadence. When it's time, a bill reaches the floor: the
+    // next card stays queued but the Audience Chamber is locked (handled in the
+    // UI) until the player resolves the vote in the Senate Hall.
+    const reachedVote = state.turnsSinceVote + 1 >= VOTE_INTERVAL;
+    const pendingVote = reachedVote ? pickBill(state.pendingVote?.id) : null;
+
     set({
       meters: newMeters,
       flags: updatedFlags,
@@ -318,6 +334,130 @@ export const useGameStore = create((set, get) => ({
       currentCard: finalCard,
       deck: newDeck,
       legacyFlags: updatedLegacyFlags,
+      turnsSinceVote: reachedVote ? 0 : state.turnsSinceVote + 1,
+      pendingVote,
+      activeRoom: reachedVote ? 'office' : 'audience',
+    });
+  },
+
+  // Navigate between rooms in the Senator's Office. The Audience Chamber is
+  // locked while a vote is pending — the player must settle the bill first.
+  enterRoom: (room) => {
+    const { pendingVote } = get();
+    if (room === 'audience' && pendingVote) return;
+    set({ activeRoom: room });
+  },
+
+  // Resolve a Senate vote. `meterDeltas` bundles the whip costs and the
+  // pass/fail outcome computed by the Senate Hall; `flags` are any outcome
+  // flags. Mirrors swipe's death/objective/win checks but does not draw a card.
+  resolveVote: ({ meterDeltas = {}, flags = [] } = {}) => {
+    const state = get();
+    if (!state.pendingVote) return;
+
+    const newMeters = { ...state.meters };
+    Object.entries(meterDeltas).forEach(([faction, delta]) => {
+      if (faction in newMeters) {
+        newMeters[faction] = Math.max(0, Math.min(100, newMeters[faction] + delta));
+      }
+    });
+    const newFlags = [...state.flags, ...flags];
+
+    const deadFaction = Object.entries(newMeters).find(([, v]) => v <= 0 || v >= 100);
+    if (deadFaction) {
+      const [factionId, value] = deadFaction;
+      const faction = FACTIONS[factionId];
+      const isTooHigh = value >= 100;
+      const deathCause = {
+        faction: factionId,
+        factionName: faction.name,
+        value,
+        label: isTooHigh ? faction.tooHighLabel : faction.tooLowLabel,
+        description: isTooHigh ? faction.tooHighDesc : faction.tooLowDesc,
+      };
+      const tempState = { meters: newMeters, flags: newFlags, turn: state.turn };
+      const newlyCompleted = state.objectives
+        .filter((o) => !state.completedObjectives.includes(o.id) && o.check(tempState))
+        .map((o) => o.id);
+      const finalCompleted = [...state.completedObjectives, ...newlyCompleted];
+      const entry = {
+        name: state.senatorName,
+        turns: state.turn,
+        deathCause,
+        date: new Date().toISOString(),
+        completedObjectives: finalCompleted,
+      };
+      const newLog = [entry, ...state.senatorLog].slice(0, 50);
+      saveLS('gs_senatorLog', newLog);
+      const namedLegacyFlags = [];
+      if (factionId === 'military' && isTooHigh) namedLegacyFlags.push('kra_van_war_started');
+      if (factionId === 'senate') namedLegacyFlags.push('senate_dissolved');
+      const newLegacyFlags = Array.from(
+        new Set([...state.legacyFlags, ...finalCompleted, ...namedLegacyFlags])
+      );
+      saveLS('gs_legacyFlags', newLegacyFlags);
+      set({
+        meters: newMeters,
+        flags: newFlags,
+        deathCause,
+        completedObjectives: finalCompleted,
+        phase: 'dead',
+        pendingVote: null,
+        activeRoom: 'office',
+        senatorLog: newLog,
+        legacyFlags: newLegacyFlags,
+      });
+      return;
+    }
+
+    const tempState = { meters: newMeters, flags: newFlags, turn: state.turn };
+    const newlyCompleted = state.objectives
+      .filter((o) => !state.completedObjectives.includes(o.id) && o.check(tempState))
+      .map((o) => o.id);
+    const finalCompleted = [...state.completedObjectives, ...newlyCompleted];
+
+    if (
+      state.objectives.length > 0 &&
+      state.objectives.every((o) => finalCompleted.includes(o.id))
+    ) {
+      const entry = {
+        name: state.senatorName,
+        turns: state.turn,
+        deathCause: null,
+        outcome: 'retired',
+        date: new Date().toISOString(),
+        completedObjectives: finalCompleted,
+      };
+      const newLog = [entry, ...state.senatorLog].slice(0, 50);
+      saveLS('gs_senatorLog', newLog);
+      const newLegacyFlags = Array.from(new Set([...state.legacyFlags, ...finalCompleted]));
+      saveLS('gs_legacyFlags', newLegacyFlags);
+      set({
+        meters: newMeters,
+        flags: newFlags,
+        completedObjectives: finalCompleted,
+        phase: 'won',
+        pendingVote: null,
+        activeRoom: 'office',
+        winData: {
+          senatorName: state.senatorName,
+          turn: state.turn,
+          completedObjectives: finalCompleted,
+          date: new Date().toISOString(),
+        },
+        senatorLog: newLog,
+        legacyFlags: newLegacyFlags,
+      });
+      return;
+    }
+
+    set({
+      meters: newMeters,
+      flags: newFlags,
+      completedObjectives: finalCompleted,
+      pendingVote: null,
+      turnsSinceVote: 0,
+      activeRoom: 'office',
     });
   },
 
